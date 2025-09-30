@@ -43,7 +43,6 @@ module "autoscaling" {
 
   vpc_zone_identifier = module.blog_vpc.public_subnets
   target_group_arns   = module.blog_alb.target_group_arns
-  security_groups     = [module.blog_sg.security_group_id]
 
   image_id      = data.aws_ami.app_ami.id
   instance_type = var.instance_type
@@ -55,12 +54,13 @@ module "blog_alb" {
   name    = "blog-alb"
   vpc_id  = module.blog_vpc.vpc_id
   subnets = module.blog_vpc.public_subnets
-  security_groups = [module.blog_sg.security_group_id]
 
+  security_groups = [module.blog_sg.security_group_id]
 
   access_logs = {
     bucket = "my-alb-logs"
   }
+}
 
   listeners = {
     ex-http-https-redirect = {
@@ -73,6 +73,11 @@ module "blog_alb" {
       }
     }
   }
+
+resource "aws_autoscaling_attachment" "asg_attachment" {
+  autoscaling_group_name = module.autoscaling.this_autoscaling_group_name
+  alb_target_group_arn   = module.blog_alb.target_group_arns[0]
+}
 
   target_groups = {
     ex-instance = {
